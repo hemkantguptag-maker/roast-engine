@@ -10,12 +10,27 @@ type SavedSession = {
 
 const SESSION_STORAGE_KEY = "brutal-roast-rewrite-session";
 
+function getRetrySeconds(message: string | null) {
+  if (!message) {
+    return null;
+  }
+
+  const match = message.match(/about\s+(\d+)\s+seconds?/i);
+  if (!match) {
+    return null;
+  }
+
+  const seconds = Number(match[1]);
+  return Number.isNaN(seconds) ? null : seconds;
+}
+
 export default function Home() {
   const [profileText, setProfileText] = useState("");
   const [loading, setLoading] = useState(false);
   const [roast, setRoast] = useState<string | null>(null);
   const [rewrite, setRewrite] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
   const [resultsVisible, setResultsVisible] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [isRewriting, setIsRewriting] = useState(false);
@@ -42,9 +57,30 @@ export default function Home() {
     }
   }, []);
 
+  useEffect(() => {
+    const seconds = getRetrySeconds(error);
+    setRetryCountdown(seconds);
+  }, [error]);
+
+  useEffect(() => {
+    if (retryCountdown === null || retryCountdown <= 0) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setRetryCountdown((current) =>
+        current !== null && current > 0 ? current - 1 : current,
+      );
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [retryCountdown]);
+
   function persistSession(next: SavedSession) {
     window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(next));
   }
+
+  const showRetryCountdown = retryCountdown !== null && retryCountdown > 0;
 
   function handleFormSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -324,9 +360,24 @@ export default function Home() {
               </div>
 
               {error ? (
-                <div className="rounded-xl border border-red-900/50 bg-red-950/20 px-4 py-4 text-sm leading-relaxed text-red-200/90">
-                  {error}
-                </div>
+                showRetryCountdown ? (
+                  <div className="rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-zinc-950/70 to-orange-500/10 px-4 py-5 text-center shadow-[0_10px_30px_-18px_rgba(251,191,36,0.45)]">
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300/80">
+                      AI queue is busy
+                    </p>
+                    <p className="mt-3 text-4xl font-bold tracking-tight text-white">
+                      {retryCountdown}s
+                    </p>
+                    <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+                      High demand hit the free AI quota. Wait for the timer, then
+                      try again for a much better shot.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-red-900/50 bg-red-950/20 px-4 py-4 text-sm leading-relaxed text-red-200/90">
+                    {error}
+                  </div>
+                )
               ) : (
                 <div className="space-y-6">
                   {roast ? (

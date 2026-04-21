@@ -23,10 +23,25 @@ function isRetryable(status: number) {
   return status === 429 || status === 500 || status === 503;
 }
 
+function getRetryDelayMs(message: string) {
+  const match = message.match(/Please retry in ([\d.]+)s/i);
+  if (!match) {
+    return null;
+  }
+
+  const seconds = Number(match[1]);
+  if (Number.isNaN(seconds)) {
+    return null;
+  }
+
+  return Math.ceil(seconds * 1000);
+}
+
 async function callGemini(apiKey: string, prompt: string) {
   const requestBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
   });
+  let lastRetryDelayMs: number | null = null;
 
   for (const model of GEMINI_MODELS) {
     const modelUrl =
@@ -51,7 +66,8 @@ async function callGemini(apiKey: string, prompt: string) {
         `Gemini HTTP ${res.status}: ${JSON.stringify(data).slice(0, 300)}`;
 
       if (isRetryable(res.status) && attempt < MAX_RETRIES) {
-        const wait = RETRY_DELAY_MS * attempt;
+        const wait = getRetryDelayMs(msg) ?? RETRY_DELAY_MS * attempt;
+        lastRetryDelayMs = wait;
         console.warn(
           `[api/rewrite] ${model} overloaded (attempt ${attempt}/${MAX_RETRIES}), retrying in ${wait}ms... - ${msg}`,
         );
@@ -71,7 +87,7 @@ async function callGemini(apiKey: string, prompt: string) {
   }
 
   throw new Error(
-    "Rewrite generation is temporarily busy. Please try again in a moment.",
+    `Rewrite generation is temporarily busy. Please try again in about ${Math.ceil((lastRetryDelayMs ?? 30000) / 1000)} seconds.`,
   );
 }
 

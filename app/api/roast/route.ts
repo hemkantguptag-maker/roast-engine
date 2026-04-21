@@ -10,8 +10,7 @@ type GeminiSuccessBody = {
   }>;
 };
 
-const GEMINI_URL =
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
+const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 2000;
@@ -25,42 +24,72 @@ function isRetryable(status: number) {
   return status === 429 || status === 500 || status === 503;
 }
 
+function getRetryDelayMs(message: string) {
+  const match = message.match(/Please retry in ([\d.]+)s/i);
+  if (!match) {
+    return null;
+  }
+
+  const seconds = Number(match[1]);
+  if (Number.isNaN(seconds)) {
+    return null;
+  }
+
+  return Math.ceil(seconds * 1000);
+}
+
 async function callGemini(apiKey: string, prompt: string) {
   const requestBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
   });
+  let lastRetryDelayMs: number | null = null;
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: requestBody,
-    });
+  for (const model of GEMINI_MODELS) {
+    const modelUrl =
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    const data: unknown = await res.json();
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      const res = await fetch(modelUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: requestBody,
+      });
 
-    if (res.ok) {
-      return data as GeminiSuccessBody;
+      const data: unknown = await res.json();
+
+      if (res.ok) {
+        return data as GeminiSuccessBody;
+      }
+
+      const errBody = data as GeminiErrorBody;
+      const msg =
+        errBody.error?.message ??
+        `Gemini HTTP ${res.status}: ${JSON.stringify(data).slice(0, 300)}`;
+
+      if (isRetryable(res.status) && attempt < MAX_RETRIES) {
+        const wait = getRetryDelayMs(msg) ?? RETRY_DELAY_MS * attempt;
+        lastRetryDelayMs = wait;
+        console.warn(
+          `[api/roast] ${model} unavailable (attempt ${attempt}/${MAX_RETRIES}), retrying in ${wait}ms... - ${msg}`,
+        );
+        await sleep(wait);
+        continue;
+      }
+
+      if (isRetryable(res.status)) {
+        console.warn(
+          `[api/roast] ${model} stayed unavailable after ${MAX_RETRIES} attempts, trying next fallback model if available...`,
+        );
+        break;
+      }
+
+      throw new Error(msg);
     }
-
-    const errBody = data as GeminiErrorBody;
-    const msg =
-      errBody.error?.message ??
-      `Gemini HTTP ${res.status}: ${JSON.stringify(data).slice(0, 300)}`;
-
-    if (isRetryable(res.status) && attempt < MAX_RETRIES) {
-      const wait = RETRY_DELAY_MS * attempt;
-      console.warn(
-        `[api/roast] Gemini overloaded (attempt ${attempt}/${MAX_RETRIES}), retrying in ${wait}ms… — ${msg}`,
-      );
-      await sleep(wait);
-      continue;
-    }
-
-    throw new Error(msg);
   }
 
-  throw new Error("Gemini is currently overloaded. Please try again in a moment.");
+  throw new Error(
+    `Roast generation is temporarily busy. Please try again in about ${Math.ceil((lastRetryDelayMs ?? 30000) / 1000)} seconds.`,
+  );
 }
 
 export async function POST(request: NextRequest) {
