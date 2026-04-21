@@ -54,9 +54,16 @@ export async function POST(request: NextRequest) {
       forwardedProto && forwardedHost
         ? `${forwardedProto}://${forwardedHost}`
         : request.nextUrl.origin;
+    const vercelProductionHost =
+      process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() ||
+      process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL?.trim();
+    const vercelProductionUrl = vercelProductionHost
+      ? `https://${vercelProductionHost}`
+      : null;
     const appUrl =
-      requestOrigin ||
       process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+      vercelProductionUrl ||
+      requestOrigin ||
       "http://localhost:3000";
 
     lemonSqueezySetup({ apiKey });
