@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         embed: false,
       },
       productOptions: {
-        redirectUrl: `${appUrl}/?success=true`,
+        redirectUrl: `${appUrl}/success?paid=true`,
         enabledVariants: [numericVariantId],
       },
     });
