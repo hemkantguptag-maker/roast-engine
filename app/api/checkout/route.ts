@@ -48,6 +48,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing variantId" }, { status: 400 });
     }
 
+    const forwardedProto = request.headers.get("x-forwarded-proto");
+    const forwardedHost = request.headers.get("x-forwarded-host");
+    const requestOrigin =
+      forwardedProto && forwardedHost
+        ? `${forwardedProto}://${forwardedHost}`
+        : request.nextUrl.origin;
+    const appUrl =
+      requestOrigin ||
+      process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+      "http://localhost:3000";
+
     lemonSqueezySetup({ apiKey });
 
     const { data, error } = await createCheckout(storeId, variantId, {
@@ -55,7 +66,7 @@ export async function POST(request: NextRequest) {
         embed: false,
       },
       productOptions: {
-        redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/?success=true`,
+        redirectUrl: `${appUrl}/?success=true`,
       },
     });
 
