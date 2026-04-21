@@ -43,9 +43,17 @@ export async function POST(request: NextRequest) {
       body && typeof body === "object" && "variantId" in body
         ? String((body as { variantId: unknown }).variantId ?? "").trim()
         : "";
+    const numericVariantId = Number(variantId);
 
     if (!variantId) {
       return NextResponse.json({ error: "Missing variantId" }, { status: 400 });
+    }
+
+    if (Number.isNaN(numericVariantId)) {
+      return NextResponse.json(
+        { error: "Invalid variantId" },
+        { status: 400 },
+      );
     }
 
     const forwardedProto = request.headers.get("x-forwarded-proto");
@@ -74,6 +82,7 @@ export async function POST(request: NextRequest) {
       },
       productOptions: {
         redirectUrl: `${appUrl}/?success=true`,
+        enabledVariants: [numericVariantId],
       },
     });
 
