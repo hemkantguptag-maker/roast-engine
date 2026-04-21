@@ -200,7 +200,10 @@ export default function Home() {
       const res = await fetch("/api/rewrite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileText: profileText.trim() }),
+        body: JSON.stringify({
+          profileText: profileText.trim(),
+          country: userCountry,
+        }),
       });
 
       const data: unknown = await res.json().catch(() => null);
@@ -254,7 +257,10 @@ export default function Home() {
       const res = await fetch("/api/roast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileText: profileTextToSend }),
+        body: JSON.stringify({
+          profileText: profileTextToSend,
+          country: userCountry,
+        }),
       });
 
       const data: unknown = await res.json().catch(() => null);

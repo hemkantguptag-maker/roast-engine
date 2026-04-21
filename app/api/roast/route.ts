@@ -99,6 +99,10 @@ export async function POST(request: NextRequest) {
       body && typeof body === "object" && "profileText" in body
         ? String((body as { profileText: unknown }).profileText ?? "").trim()
         : "";
+    const country =
+      body && typeof body === "object" && "country" in body
+        ? String((body as { country: unknown }).country ?? "").trim() || null
+        : null;
 
     if (!profileText) {
       return NextResponse.json({ error: "Missing profileText" }, { status: 400 });
@@ -129,7 +133,8 @@ export async function POST(request: NextRequest) {
       "Format your response EXACTLY like this with no extra text:\n" +
       "🇬🇧 The Global Roast: [Your simple English roast]\n" +
       "🌍 The Desi/Local Roast: [Your native language roast]\n\n" +
-      profileText;
+      profileText +
+      `\n\nImportant Localization Rule: The user is located in the country with ISO code '${country}'. Identify the primary spoken language of this country. You MUST generate your ENTIRE final response in that native language. If the country code is 'IN' (India), generate the response in a conversational mix of Hindi and English (Hinglish). If the country is 'US', 'GB', 'CA', 'AU', or if the country code is missing/null, default to English.`;
 
     const geminiData = await callGemini(apiKey, prompt);
     const text = geminiData.candidates[0].content.parts[0].text;

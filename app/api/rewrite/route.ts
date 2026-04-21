@@ -98,6 +98,10 @@ export async function POST(request: NextRequest) {
       body && typeof body === "object" && "profileText" in body
         ? String((body as { profileText: unknown }).profileText ?? "").trim()
         : "";
+    const country =
+      body && typeof body === "object" && "country" in body
+        ? String((body as { country: unknown }).country ?? "").trim() || null
+        : null;
 
     if (!profileText) {
       return NextResponse.json(
@@ -120,7 +124,8 @@ export async function POST(request: NextRequest) {
 
     const prompt =
       "You are an elite executive career coach and resume writer. Rewrite the following LinkedIn profile text to make it sound highly professional, impactful, and attractive to top-tier recruiters. Fix any bad grammar, highlight key achievements, and format it beautifully using paragraphs and bullet points. Do not include any conversational filler; only return the final rewritten profile.\n\n" +
-      profileText;
+      profileText +
+      `\n\nImportant Localization Rule: The user is located in the country with ISO code '${country}'. Identify the primary spoken language of this country. You MUST generate your ENTIRE final response in that native language. If the country code is 'IN' (India), generate the response in a conversational mix of Hindi and English (Hinglish). If the country is 'US', 'GB', 'CA', 'AU', or if the country code is missing/null, default to English.`;
 
     const geminiData = await callGemini(apiKey, prompt);
     const text = geminiData.candidates[0].content.parts[0].text;
