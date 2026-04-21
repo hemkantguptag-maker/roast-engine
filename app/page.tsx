@@ -35,7 +35,7 @@ export default function Home() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [isRewriting, setIsRewriting] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
-  const [region, setRegion] = useState<"india" | "global">("india");
+  const [userCountry, setUserCountry] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -55,6 +55,38 @@ export default function Home() {
     } catch {
       window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
     }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function detectCountry() {
+      try {
+        const res = await fetch("https://get.geojs.io/v1/ip/country.json");
+        const data: unknown = await res.json().catch(() => null);
+        const country =
+          data &&
+          typeof data === "object" &&
+          "country" in data &&
+          typeof (data as { country: unknown }).country === "string"
+            ? (data as { country: string }).country
+            : null;
+
+        if (!cancelled) {
+          setUserCountry(country || "GLOBAL");
+        }
+      } catch {
+        if (!cancelled) {
+          setUserCountry("GLOBAL");
+        }
+      }
+    }
+
+    void detectCountry();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -90,13 +122,13 @@ export default function Home() {
 
   async function handleCheckout() {
     const variantId =
-      region === "india"
+      userCountry === "IN"
         ? process.env.NEXT_PUBLIC_LEMON_SQUEEZY_INDIA_VARIANT_ID
         : process.env.NEXT_PUBLIC_LEMON_SQUEEZY_GLOBAL_VARIANT_ID;
 
     if (!variantId) {
       setError(
-        `Missing variant ID for region "${region}". Check your .env.local.`,
+        `Missing variant ID for ${userCountry === "IN" ? "India" : "global"} checkout. Check your .env.local.`,
       );
       return;
     }
@@ -419,49 +451,28 @@ export default function Home() {
                     </div>
                   ) : roast ? (
                     <>
-                      <div className="space-y-3">
-                        <p className="text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                          Where are you located?
-                        </p>
-                        <div className="flex overflow-hidden rounded-xl border border-zinc-700/60 bg-zinc-950/60">
-                          <button
-                            type="button"
-                            onClick={() => setRegion("india")}
-                            className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-sm font-semibold transition-colors ${
-                              region === "india"
-                                ? "bg-amber-500/20 text-amber-200"
-                                : "text-zinc-500 hover:text-zinc-300"
-                            }`}
-                          >
-                            <span aria-hidden>🇮🇳</span> India
-                          </button>
-                          <div className="w-px bg-zinc-700/60" />
-                          <button
-                            type="button"
-                            onClick={() => setRegion("global")}
-                            className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-sm font-semibold transition-colors ${
-                              region === "global"
-                                ? "bg-amber-500/20 text-amber-200"
-                                : "text-zinc-500 hover:text-zinc-300"
-                            }`}
-                          >
-                            <span aria-hidden>🌍</span> Rest of World
-                          </button>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => void handleCheckout()}
-                        disabled={checkoutLoading}
-                        className="w-full rounded-xl border border-amber-500/35 bg-gradient-to-b from-amber-500/15 to-transparent px-5 py-4 text-center text-sm font-semibold tracking-wide text-amber-100 shadow-[0_0_0_1px_rgba(251,191,36,0.12)_inset] transition-[border-color,background-color,transform] hover:border-amber-400/50 hover:from-amber-500/25 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:text-base"
-                      >
-                        {checkoutLoading
-                          ? "Redirecting to checkout..."
-                          : region === "india"
-                            ? "\u2728 Unlock Professional Rewrite \u2014 \u20B999"
-                            : "\u2728 Unlock Professional Rewrite \u2014 $4.99"}
-                      </button>
+                      {userCountry === null ? (
+                        <button
+                          type="button"
+                          disabled
+                          className="w-full rounded-xl border border-zinc-700/50 bg-zinc-950/50 px-5 py-4 text-center text-sm font-semibold tracking-wide text-zinc-400 shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset] disabled:cursor-not-allowed sm:text-base"
+                        >
+                          Loading Secure Checkout...
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void handleCheckout()}
+                          disabled={checkoutLoading}
+                          className="w-full rounded-xl border border-amber-500/35 bg-gradient-to-b from-amber-500/15 to-transparent px-5 py-4 text-center text-sm font-semibold tracking-wide text-amber-100 shadow-[0_0_0_1px_rgba(251,191,36,0.12)_inset] transition-[border-color,background-color,transform] hover:border-amber-400/50 hover:from-amber-500/25 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:text-base"
+                        >
+                          {checkoutLoading
+                            ? "Redirecting to checkout..."
+                            : userCountry === "IN"
+                              ? "\u2728 Unlock Professional Rewrite \u2014 \u20B999"
+                              : "\u2728 Unlock Professional Rewrite \u2014 $4.99"}
+                        </button>
+                      )}
                     </>
                   ) : hasPaid ? (
                     <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-4 text-sm leading-relaxed text-zinc-300">
