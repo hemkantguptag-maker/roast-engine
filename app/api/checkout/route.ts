@@ -68,9 +68,10 @@ export async function POST(request: NextRequest) {
     const vercelProductionUrl = vercelProductionHost
       ? `https://${vercelProductionHost}`
       : null;
+    const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || null;
     const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL?.trim() ||
       vercelProductionUrl ||
+      configuredAppUrl ||
       requestOrigin ||
       "http://localhost:3000";
 
