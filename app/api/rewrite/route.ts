@@ -123,14 +123,16 @@ export async function POST(request: NextRequest) {
     }
 
     const prompt =
-      "You are a top-tier executive resume writer. Rewrite the following LinkedIn profile or resume text using Harvard Business School resume standards.\n\n" +
+      "You are a top-tier executive resume writer creating a $1,000 premium executive branding package. Rewrite the following LinkedIn profile or resume text using Harvard Business School resume standards.\n\n" +
+      "Structure the output EXACTLY like this:\n\n" +
+      "✨ SEO-Optimized Headline: (Provide a punchy, highly searchable LinkedIn headline).\n\n" +
+      "Executive Summary: (A powerful, 3-sentence narrative without passive voice).\n\n" +
+      "Experience & Impact: (Use the Harvard Business School format. Force the use of placeholders like [Insert $ amount] or [Insert % growth] if they did not provide numbers, so they know what to fill in).\n\n" +
       "CRUCIAL RULES:\n" +
       "- Use strong action verbs.\n" +
       "- Eliminate passive voice completely.\n" +
-      "- Structure bullet points for maximum impact and clarity.\n" +
       "- Keep the formatting clean, premium, and highly professional.\n" +
       "- Make the candidate sound credible, impressive, and recruiter-ready.\n" +
-      "- If the original text lacks specific numbers or metrics, insert placeholders like [Insert specific % metric here] or [Insert $ amount here] exactly where supporting data is needed.\n" +
       "- Do not include conversational filler, explanations, or notes outside the final rewritten profile.\n\n" +
       profileText +
       `\n\nImportant Localization Rule: The user is located in the country with ISO code '${country}'. Identify the primary spoken language of this country. You MUST generate your ENTIRE final response in that native language. If the country code is 'IN' (India), generate the response in a conversational mix of Hindi and English (Hinglish). If the country is 'US', 'GB', 'CA', 'AU', or if the country code is missing/null, default to English.`;

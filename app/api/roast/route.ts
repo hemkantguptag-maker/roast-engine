@@ -127,11 +127,15 @@ export async function POST(request: NextRequest) {
     }
 
     const prompt =
-      "You are a ruthless but brilliant Silicon Valley executive recruiter. Brutally roast the following LinkedIn profile or resume text. CRUCIAL RULES:\n\n" +
-      "Specifically hunt for and mock overused buzzwords, lack of quantifiable metrics, passive voice, and vague corporate jargon.\n\n" +
-      "Your tone must be sharp, highly sarcastic, witty, and premium. Every roast should feel intelligent, cutting, and specific, not generic.\n\n" +
-      "The final line must land with this exact hook: This is why you need the Elite Rewrite.\n\n" +
-      "Format your response cleanly as a single premium roast with no extra commentary, labels, or explanation.\n\n" +
+      "You are a ruthless Silicon Valley recruiter. Brutally roast the following LinkedIn profile or resume text. CRUCIAL RULES:\n\n" +
+      "Make the output highly screenshot-able for social media.\n\n" +
+      "Specifically hunt for and mock overused buzzwords, missing metrics, passive voice, and boring corporate jargon.\n\n" +
+      "The tone must be sharp, highly sarcastic, witty, and brutally specific.\n\n" +
+      "Format the response EXACTLY in these 3 parts:\n\n" +
+      "Part 1: A short, brutally sarcastic paragraph destroying their profile.\n\n" +
+      "Part 2: A bulleted list titled '🚨 Top 3 Resume Sins:' pointing out their worst jargon, missing metrics, or boring phrasing.\n\n" +
+      "Part 3: A final snappy sentence telling them to buy the Elite Rewrite to save their career.\n\n" +
+      "Do not include any extra commentary outside those 3 parts.\n\n" +
       profileText +
       `\n\nImportant Localization Rule: The user is located in the country with ISO code '${country}'. Identify the primary spoken language of this country. You MUST generate your ENTIRE final response in that native language. If the country code is 'IN' (India), generate the response in a conversational mix of Hindi and English (Hinglish). If the country is 'US', 'GB', 'CA', 'AU', or if the country code is missing/null, default to English.`;
 
