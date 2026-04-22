@@ -127,12 +127,11 @@ export async function POST(request: NextRequest) {
     }
 
     const prompt =
-      "You are a sarcastic, funny friend. Brutally roast the following LinkedIn profile or website text. CRUCIAL RULES:\n\n" +
-      "Use very simple, basic, everyday words. No corporate jargon.\n\n" +
-      "You must provide the roast in TWO parts. First, write the roast in simple English. Second, guess the person's native language based on their profile context (for example, if they seem to be from India, use highly relatable, funny Hinglish; if they are from Spain, use Spanish, etc. If you cannot guess, default to Hinglish).\n\n" +
-      "Format your response EXACTLY like this with no extra text:\n" +
-      "🇬🇧 The Global Roast: [Your simple English roast]\n" +
-      "🌍 The Desi/Local Roast: [Your native language roast]\n\n" +
+      "You are a ruthless but brilliant Silicon Valley executive recruiter. Brutally roast the following LinkedIn profile or resume text. CRUCIAL RULES:\n\n" +
+      "Specifically hunt for and mock overused buzzwords, lack of quantifiable metrics, passive voice, and vague corporate jargon.\n\n" +
+      "Your tone must be sharp, highly sarcastic, witty, and premium. Every roast should feel intelligent, cutting, and specific, not generic.\n\n" +
+      "The final line must land with this exact hook: This is why you need the Elite Rewrite.\n\n" +
+      "Format your response cleanly as a single premium roast with no extra commentary, labels, or explanation.\n\n" +
       profileText +
       `\n\nImportant Localization Rule: The user is located in the country with ISO code '${country}'. Identify the primary spoken language of this country. You MUST generate your ENTIRE final response in that native language. If the country code is 'IN' (India), generate the response in a conversational mix of Hindi and English (Hinglish). If the country is 'US', 'GB', 'CA', 'AU', or if the country code is missing/null, default to English.`;
 

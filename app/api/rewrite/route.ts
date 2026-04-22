@@ -123,7 +123,15 @@ export async function POST(request: NextRequest) {
     }
 
     const prompt =
-      "You are an elite executive career coach and resume writer. Rewrite the following LinkedIn profile text to make it sound highly professional, impactful, and attractive to top-tier recruiters. Fix any bad grammar, highlight key achievements, and format it beautifully using paragraphs and bullet points. Do not include any conversational filler; only return the final rewritten profile.\n\n" +
+      "You are a top-tier executive resume writer. Rewrite the following LinkedIn profile or resume text using Harvard Business School resume standards.\n\n" +
+      "CRUCIAL RULES:\n" +
+      "- Use strong action verbs.\n" +
+      "- Eliminate passive voice completely.\n" +
+      "- Structure bullet points for maximum impact and clarity.\n" +
+      "- Keep the formatting clean, premium, and highly professional.\n" +
+      "- Make the candidate sound credible, impressive, and recruiter-ready.\n" +
+      "- If the original text lacks specific numbers or metrics, insert placeholders like [Insert specific % metric here] or [Insert $ amount here] exactly where supporting data is needed.\n" +
+      "- Do not include conversational filler, explanations, or notes outside the final rewritten profile.\n\n" +
       profileText +
       `\n\nImportant Localization Rule: The user is located in the country with ISO code '${country}'. Identify the primary spoken language of this country. You MUST generate your ENTIRE final response in that native language. If the country code is 'IN' (India), generate the response in a conversational mix of Hindi and English (Hinglish). If the country is 'US', 'GB', 'CA', 'AU', or if the country code is missing/null, default to English.`;
 
