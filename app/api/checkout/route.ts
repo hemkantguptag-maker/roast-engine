@@ -56,24 +56,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const forwardedProto = request.headers.get("x-forwarded-proto");
-    const forwardedHost = request.headers.get("x-forwarded-host");
-    const requestOrigin =
-      forwardedProto && forwardedHost
-        ? `${forwardedProto}://${forwardedHost}`
-        : request.nextUrl.origin;
-    const vercelProductionHost =
-      process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() ||
-      process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL?.trim();
-    const vercelProductionUrl = vercelProductionHost
-      ? `https://${vercelProductionHost}`
-      : null;
-    const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || null;
-    const appUrl =
-      vercelProductionUrl ||
-      configuredAppUrl ||
-      requestOrigin ||
-      "http://localhost:3000";
+    const appUrl = "https://roast-engine.vercel.app";
 
     lemonSqueezySetup({ apiKey });
 
@@ -82,7 +65,7 @@ export async function POST(request: NextRequest) {
         embed: false,
       },
       productOptions: {
-        redirectUrl: `${appUrl}/success?paid=true`,
+        redirectUrl: `${appUrl}/?success=true`,
         enabledVariants: [numericVariantId],
       },
     });

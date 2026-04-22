@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const siteUrl = "https://roast-engine.vercel.app";
 const title = "Roast Engine | AI Profile Roaster & Professional Rewrite";
 const description =
   "Roast your LinkedIn profile for free, then unlock an AI-powered executive rewrite that makes your profile sharper, cleaner, and far more recruiter-ready.";
