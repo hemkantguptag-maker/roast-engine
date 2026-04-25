@@ -347,6 +347,7 @@ export default function Home() {
           </label>
           <textarea
             id="profile-text"
+            rows={8}
             placeholder={`Copy & paste your raw text here (DO NOT paste links/URLs!)
 
 What works best:
@@ -358,7 +359,7 @@ What works best:
             onChange={(e) => setProfileText(e.target.value)}
             disabled={loading}
             required
-            className="min-h-[13rem] w-full resize-y rounded-2xl border border-zinc-800 bg-zinc-900/80 px-4 py-4 text-sm leading-7 text-zinc-100 shadow-inner shadow-black/40 outline-none ring-0 placeholder:text-zinc-600 backdrop-blur-sm transition-[border-color,box-shadow] focus:border-orange-500/60 focus:shadow-[0_0_0_3px_rgba(249,115,22,0.15)] enabled:hover:border-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[14rem] sm:text-base"
+            className="min-h-[200px] w-full resize-y rounded-2xl border border-zinc-800 bg-zinc-900/80 px-4 py-4 text-sm leading-7 text-zinc-100 shadow-inner shadow-black/40 outline-none ring-0 placeholder:text-zinc-600 backdrop-blur-sm transition-[border-color,box-shadow] focus:border-orange-500/60 focus:shadow-[0_0_0_3px_rgba(249,115,22,0.15)] enabled:hover:border-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[220px] sm:text-base"
           />
           {error ? (
             <p className="text-sm leading-relaxed text-red-400">{error}</p>
