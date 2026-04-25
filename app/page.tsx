@@ -56,6 +56,7 @@ export default function Home() {
   const [userCountry, setUserCountry] = useState<string | null>(null);
   const [roastLanguage, setRoastLanguage] =
     useState<RoastLanguage>("English (Default)");
+  const [copiedShare, setCopiedShare] = useState(false);
 
   useEffect(() => {
     const autosavedProfileText = window.localStorage.getItem(USER_PROFILE_TEXT_KEY);
@@ -153,6 +154,32 @@ export default function Home() {
   function handleProfileTextChange(newValue: string) {
     setProfileText(newValue);
     window.localStorage.setItem(USER_PROFILE_TEXT_KEY, newValue);
+  }
+
+  function getFullShareText(roastText: string) {
+    const shareUrl = "https://myroastengine.com";
+    const roastPreview = roastText.slice(0, 100);
+    return `This AI just murdered my career! 😭🔥 \n\n${roastPreview}... \n\nGet roasted here: ${shareUrl}`;
+  }
+
+  async function handleCopyRoast(roastText: string) {
+    try {
+      await navigator.clipboard.writeText(getFullShareText(roastText));
+      setCopiedShare(true);
+      window.setTimeout(() => setCopiedShare(false), 1800);
+    } catch {
+      setError("Could not copy roast. Try again.");
+    }
+  }
+
+  function handleShareOnX(roastText: string) {
+    const shareText = encodeURIComponent(getFullShareText(roastText));
+    window.open(`https://twitter.com/intent/tweet?text=${shareText}`, "_blank");
+  }
+
+  function handleShareOnWhatsApp(roastText: string) {
+    const shareText = encodeURIComponent(getFullShareText(roastText));
+    window.open(`https://wa.me/?text=${shareText}`, "_blank");
   }
 
   async function handleCheckout() {
@@ -505,15 +532,40 @@ What works best:
               ) : (
                 <div className="space-y-6">
                   {roast ? (
-                    <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/60 px-5 py-5 sm:px-6 sm:py-6">
-                      <div
-                        aria-hidden
-                        className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(249,115,22,0.06),transparent_45%,rgba(244,63,94,0.05))]"
-                      />
-                      <p className="relative whitespace-pre-wrap text-pretty text-[15px] leading-[1.7] text-zinc-200 sm:text-base">
-                        {roast}
-                      </p>
-                    </div>
+                    <>
+                      <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/60 px-5 py-5 sm:px-6 sm:py-6">
+                        <div
+                          aria-hidden
+                          className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(249,115,22,0.06),transparent_45%,rgba(244,63,94,0.05))]"
+                        />
+                        <p className="relative whitespace-pre-wrap text-pretty text-[15px] leading-[1.7] text-zinc-200 sm:text-base">
+                          {roast}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleCopyRoast(roast)}
+                          className="flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs text-zinc-300 transition-all hover:bg-zinc-700 sm:text-sm"
+                        >
+                          {copiedShare ? "✅ Copied!" : "📋 Copy Roast"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleShareOnX(roast)}
+                          className="flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs text-zinc-300 transition-all hover:bg-zinc-700 sm:text-sm"
+                        >
+                          🐦 Share on X
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleShareOnWhatsApp(roast)}
+                          className="flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs text-zinc-300 transition-all hover:bg-zinc-700 sm:text-sm"
+                        >
+                          📱 WhatsApp
+                        </button>
+                      </div>
+                    </>
                   ) : null}
 
                   {hasPaid ? (
