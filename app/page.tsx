@@ -359,12 +359,15 @@ What works best:
             onChange={(e) => setProfileText(e.target.value)}
             disabled={loading}
             required
-            className="min-h-[200px] w-full resize-y rounded-2xl border border-zinc-800 bg-zinc-900/80 px-4 py-4 text-sm leading-7 text-zinc-100 shadow-inner shadow-black/40 outline-none ring-0 placeholder:text-zinc-600 backdrop-blur-sm transition-[border-color,box-shadow] focus:border-orange-500/60 focus:shadow-[0_0_0_3px_rgba(249,115,22,0.15)] enabled:hover:border-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[220px] sm:text-base"
+            className="min-h-[200px] w-full resize-y rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 text-sm leading-7 text-zinc-100 shadow-inner shadow-black/40 outline-none ring-0 placeholder:text-gray-400 backdrop-blur-sm transition-[border-color,box-shadow] focus:border-orange-500/60 focus:shadow-[0_0_0_3px_rgba(249,115,22,0.15)] enabled:hover:border-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[220px] sm:text-base"
           />
-          <p className="mt-2 text-center text-xs text-gray-500">
-            📱 Mobile Users: The LinkedIn app blocks text copying. Paste text from
-            your PDF/Notes, or open LinkedIn in your mobile web browser instead!
-          </p>
+          <div className="mt-2 rounded-lg border border-gray-700 bg-gray-800/50 p-3">
+            <p className="text-center text-sm text-gray-300">
+              📱 Mobile Users: The LinkedIn app blocks text copying. Paste text
+              from your PDF/Notes, or open LinkedIn in your mobile web browser
+              instead!
+            </p>
+          </div>
           {error ? (
             <p className="text-sm leading-relaxed text-red-400">{error}</p>
           ) : null}
@@ -372,7 +375,7 @@ What works best:
           <button
             type="submit"
             disabled={loading}
-            className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-orange-500 via-orange-500 to-amber-500 px-6 py-4 text-center text-base font-bold tracking-wide text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.08)_inset,0_12px_40px_-12px_rgba(249,115,22,0.55)] transition-[transform,filter] hover:brightness-110 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100 sm:py-4 sm:text-lg"
+            className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-orange-500 via-orange-500 to-amber-500 px-6 py-4 text-center text-lg font-bold tracking-wide text-zinc-950 shadow-lg shadow-orange-500/40 transition-[transform,filter,box-shadow] hover:brightness-110 hover:shadow-xl hover:shadow-orange-500/50 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100 sm:py-4 sm:text-lg"
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
               <span aria-hidden>{"\u{1F525}"}</span>
