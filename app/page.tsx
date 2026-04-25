@@ -8,7 +8,21 @@ type SavedSession = {
   profileText: string;
 };
 
+const ROAST_LANGUAGE_OPTIONS = [
+  "English (Default)",
+  "Hinglish (Viral)",
+  "Hindi",
+  "Telugu",
+  "Tamil",
+  "Marathi",
+  "Kannada",
+  "Spanish",
+] as const;
+
+type RoastLanguage = (typeof ROAST_LANGUAGE_OPTIONS)[number];
+
 const SESSION_STORAGE_KEY = "brutal-roast-rewrite-session";
+const SAVED_ROAST_TEXT_KEY = "savedRoastText";
 const LINK_PASTE_ERROR =
   "🚨 SYSTEM ERROR: Did you seriously just paste a link? I am an AI, not a web scraper. Copy and paste your actual text like a normal professional. 0/10 for following instructions. Try again.";
 
@@ -38,10 +52,17 @@ export default function Home() {
   const [isRewriting, setIsRewriting] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
   const [userCountry, setUserCountry] = useState<string | null>(null);
+  const [roastLanguage, setRoastLanguage] =
+    useState<RoastLanguage>("English (Default)");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setHasPaid(params.get("success") === "true");
+
+    const savedLocalText = window.localStorage.getItem(SAVED_ROAST_TEXT_KEY);
+    if (savedLocalText) {
+      setProfileText(savedLocalText);
+    }
 
     const saved = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (!saved) {
@@ -169,6 +190,7 @@ export default function Home() {
         return;
       }
 
+      window.localStorage.setItem(SAVED_ROAST_TEXT_KEY, profileText);
       window.location.href = checkoutUrl;
     } catch {
       setError("Network error starting checkout. Check your connection.");
@@ -182,11 +204,18 @@ export default function Home() {
       return;
     }
 
-    if (!profileText.trim()) {
+    const restoredLocalText =
+      profileText.trim() || window.localStorage.getItem(SAVED_ROAST_TEXT_KEY)?.trim() || "";
+
+    if (!restoredLocalText) {
       setError(
         "We could not restore the profile text after checkout. Roast the profile again, then try the rewrite.",
       );
       return;
+    }
+
+    if (!profileText.trim()) {
+      setProfileText(restoredLocalText);
     }
 
     setError(null);
@@ -203,7 +232,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          profileText: profileText.trim(),
+          profileText: restoredLocalText,
           country: userCountry,
         }),
       });
@@ -239,7 +268,7 @@ export default function Home() {
       persistSession({
         roast,
         rewrite: rewriteText,
-        profileText,
+        profileText: restoredLocalText,
       });
     } catch {
       setError("Network error generating your rewrite. Try again.");
@@ -268,6 +297,7 @@ export default function Home() {
         body: JSON.stringify({
           profileText: profileTextToSend,
           country: userCountry,
+          roastLanguage,
         }),
       });
 
@@ -371,6 +401,19 @@ What works best:
           {error ? (
             <p className="text-sm leading-relaxed text-red-400">{error}</p>
           ) : null}
+
+          <select
+            value={roastLanguage}
+            onChange={(e) => setRoastLanguage(e.target.value as RoastLanguage)}
+            disabled={loading}
+            className="mb-4 w-full rounded-lg border border-zinc-800 bg-zinc-900 p-3 text-zinc-300 outline-none focus:ring-1 focus:ring-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {ROAST_LANGUAGE_OPTIONS.map((languageOption) => (
+              <option key={languageOption} value={languageOption}>
+                {languageOption}
+              </option>
+            ))}
+          </select>
 
           <button
             type="submit"

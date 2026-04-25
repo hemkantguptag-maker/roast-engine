@@ -99,10 +99,11 @@ export async function POST(request: NextRequest) {
       body && typeof body === "object" && "profileText" in body
         ? String((body as { profileText: unknown }).profileText ?? "").trim()
         : "";
-    const country =
-      body && typeof body === "object" && "country" in body
-        ? String((body as { country: unknown }).country ?? "").trim() || null
-        : null;
+    const roastLanguage =
+      body && typeof body === "object" && "roastLanguage" in body
+        ? String((body as { roastLanguage: unknown }).roastLanguage ?? "").trim() ||
+          "English (Default)"
+        : "English (Default)";
 
     if (!profileText) {
       return NextResponse.json({ error: "Missing profileText" }, { status: 400 });
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
       "Part 3: A final snappy sentence telling them to buy the Elite Rewrite to save their career.\n\n" +
       "Do not include any extra commentary outside those 3 parts.\n\n" +
       profileText +
-      `\n\nImportant Localization Rule: The user is located in the country with ISO code '${country}'. Identify the primary spoken language of this country. You MUST generate your ENTIRE final response in that native language. If the country code is 'IN' (India), generate the response in a conversational mix of Hindi and English (Hinglish). If the country is 'US', 'GB', 'CA', 'AU', or if the country code is missing/null, default to English.`;
+      `\n\nCRITICAL RULE: You must generate this entire roast in: ${roastLanguage}. If a regional language (like Hindi, Telugu, Tamil, Hinglish, etc.) is selected, DO NOT use formal translation. You MUST use heavy local internet slang, modern pop-culture phrasing, and savage street-style humor to make it highly viral and relatable. If English or Spanish is selected, use a brutal, aggressive tech-bro tone.`;
 
     const geminiData = await callGemini(apiKey, prompt);
     const text = geminiData.candidates[0].content.parts[0].text;

@@ -98,11 +98,6 @@ export async function POST(request: NextRequest) {
       body && typeof body === "object" && "profileText" in body
         ? String((body as { profileText: unknown }).profileText ?? "").trim()
         : "";
-    const country =
-      body && typeof body === "object" && "country" in body
-        ? String((body as { country: unknown }).country ?? "").trim() || null
-        : null;
-
     if (!profileText) {
       return NextResponse.json(
         { error: "Missing profileText" },
@@ -135,7 +130,7 @@ export async function POST(request: NextRequest) {
       "- Make the candidate sound credible, impressive, and recruiter-ready.\n" +
       "- Do not include conversational filler, explanations, or notes outside the final rewritten profile.\n\n" +
       profileText +
-      `\n\nImportant Localization Rule: The user is located in the country with ISO code '${country}'. Identify the primary spoken language of this country. You MUST generate your ENTIRE final response in that native language. If the country code is 'IN' (India), generate the response in a conversational mix of Hindi and English (Hinglish). If the country is 'US', 'GB', 'CA', 'AU', or if the country code is missing/null, default to English.`;
+      "\n\nCRITICAL RULE: You are an elite executive recruiter. ALWAYS output the rewrite in highly professional, globally accepted English. Auto-detect the user's spelling variant from their input text: if they use UK/Indian spellings (e.g., \"optimise\", \"colour\"), output in UK English. If they use US spellings, output in US English. Never use slang or Hinglish.";
 
     const geminiData = await callGemini(apiKey, prompt);
     const text = geminiData.candidates[0].content.parts[0].text;
