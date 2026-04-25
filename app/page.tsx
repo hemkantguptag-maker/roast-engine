@@ -156,30 +156,45 @@ export default function Home() {
     window.localStorage.setItem(USER_PROFILE_TEXT_KEY, newValue);
   }
 
-  function getFullShareText(roastText: string) {
+  function getDefaultShareText(roastText: string) {
     const shareUrl = "https://myroastengine.com";
-    const roastPreview = roastText.slice(0, 100);
-    return `This AI just murdered my career! 😭🔥 \n\n${roastPreview}... \n\nGet roasted here: ${shareUrl}`;
+    const roastPreview = roastText.slice(0, 80);
+    return `I just got destroyed by AI! 😭🔥 My LinkedIn profile is officially a crime scene. \n\n${roastPreview}... \n\nCheck yours: ${shareUrl}`;
+  }
+
+  function getLinkedInChallengeMessage() {
+    return "I just took the AI Career Roast Challenge. It was brutal, but the rewrite is pure gold! 💼🔥 Can your profile handle a 100% honest AI roast? \n\nTry it here: https://myroastengine.com";
   }
 
   async function handleCopyRoast(roastText: string) {
     try {
-      await navigator.clipboard.writeText(getFullShareText(roastText));
+      await navigator.clipboard.writeText(getDefaultShareText(roastText));
       setCopiedShare(true);
-      window.setTimeout(() => setCopiedShare(false), 1800);
+      window.setTimeout(() => setCopiedShare(false), 2000);
     } catch {
       setError("Could not copy roast. Try again.");
     }
   }
 
   function handleShareOnX(roastText: string) {
-    const shareText = encodeURIComponent(getFullShareText(roastText));
+    const shareText = encodeURIComponent(getDefaultShareText(roastText));
     window.open(`https://twitter.com/intent/tweet?text=${shareText}`, "_blank");
   }
 
   function handleShareOnWhatsApp(roastText: string) {
-    const shareText = encodeURIComponent(getFullShareText(roastText));
+    const shareText = encodeURIComponent(getDefaultShareText(roastText));
     window.open(`https://wa.me/?text=${shareText}`, "_blank");
+  }
+
+  function handleShareOnThreads(roastText: string) {
+    const shareText = encodeURIComponent(getDefaultShareText(roastText));
+    window.open(`https://www.threads.net/intent/post?text=${shareText}`, "_blank");
+  }
+
+  function handleShareOnLinkedIn() {
+    const linkedInShareUrl =
+      "https://www.linkedin.com/sharing/share-offsite/?url=https://myroastengine.com";
+    window.open(linkedInShareUrl, "_blank");
   }
 
   async function handleCheckout() {
@@ -546,23 +561,38 @@ What works best:
                         <button
                           type="button"
                           onClick={() => void handleCopyRoast(roast)}
-                          className="flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs text-zinc-300 transition-all hover:bg-zinc-700 sm:text-sm"
+                          className="flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-300 transition-all hover:bg-zinc-800 sm:text-sm"
                         >
-                          {copiedShare ? "✅ Copied!" : "📋 Copy Roast"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleShareOnX(roast)}
-                          className="flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs text-zinc-300 transition-all hover:bg-zinc-700 sm:text-sm"
-                        >
-                          🐦 Share on X
+                          {copiedShare ? "✅ Copied!" : "📋 Copy"}
                         </button>
                         <button
                           type="button"
                           onClick={() => handleShareOnWhatsApp(roast)}
-                          className="flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs text-zinc-300 transition-all hover:bg-zinc-700 sm:text-sm"
+                          className="flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-300 transition-all hover:bg-zinc-800 sm:text-sm"
                         >
                           📱 WhatsApp
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleShareOnX(roast)}
+                          className="flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-300 transition-all hover:bg-zinc-800 sm:text-sm"
+                        >
+                          🐦 X
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleShareOnLinkedIn()}
+                          title={getLinkedInChallengeMessage()}
+                          className="flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-300 transition-all hover:bg-zinc-800 sm:text-sm"
+                        >
+                          💼 LinkedIn
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleShareOnThreads(roast)}
+                          className="flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-300 transition-all hover:bg-zinc-800 sm:text-sm"
+                        >
+                          🧵 Threads
                         </button>
                       </div>
                     </>
