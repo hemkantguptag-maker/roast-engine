@@ -331,7 +331,7 @@ export default function Home() {
           <h1 className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl sm:leading-tight">
             Brutal Roast &amp; Rewrite
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-zinc-400 sm:text-lg">
+          <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-gray-300 sm:text-lg">
             Paste your LinkedIn profile text or resume. The AI will roast it for
             free. Pay $4.99 to have it rewritten into a Top-1% profile.
           </p>
@@ -359,7 +359,7 @@ What works best:
             onChange={(e) => setProfileText(e.target.value)}
             disabled={loading}
             required
-            className="min-h-[200px] w-full resize-y rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 text-sm leading-7 text-zinc-100 shadow-inner shadow-black/40 outline-none ring-0 placeholder:text-gray-400 backdrop-blur-sm transition-[border-color,box-shadow] focus:border-orange-500/60 focus:shadow-[0_0_0_3px_rgba(249,115,22,0.15)] enabled:hover:border-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[220px] sm:text-base"
+            className="min-h-[200px] w-full resize-y rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 text-sm leading-7 text-white shadow-inner shadow-black/40 outline-none ring-0 placeholder:text-gray-400 backdrop-blur-sm transition-[border-color,box-shadow] focus:border-orange-500/60 focus:shadow-[0_0_0_3px_rgba(249,115,22,0.15)] enabled:hover:border-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[220px] sm:text-base"
           />
           <div className="mt-2 rounded-lg border border-gray-700 bg-gray-800/50 p-3">
             <p className="text-center text-sm text-gray-300">
