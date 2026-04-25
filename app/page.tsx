@@ -23,6 +23,8 @@ type RoastLanguage = (typeof ROAST_LANGUAGE_OPTIONS)[number];
 
 const SESSION_STORAGE_KEY = "brutal-roast-rewrite-session";
 const SAVED_ROAST_TEXT_KEY = "savedRoastText";
+const USER_PROFILE_TEXT_KEY = "userProfileText";
+const SAVED_ROAST_RESULT_KEY = "savedRoastResult";
 const LINK_PASTE_ERROR =
   "🚨 SYSTEM ERROR: Did you seriously just paste a link? I am an AI, not a web scraper. Copy and paste your actual text like a normal professional. 0/10 for following instructions. Try again.";
 
@@ -56,11 +58,16 @@ export default function Home() {
     useState<RoastLanguage>("English (Default)");
 
   useEffect(() => {
+    const autosavedProfileText = window.localStorage.getItem(USER_PROFILE_TEXT_KEY);
+    if (autosavedProfileText) {
+      setProfileText(autosavedProfileText);
+    }
+
     const params = new URLSearchParams(window.location.search);
     setHasPaid(params.get("success") === "true");
 
     const savedLocalText = window.localStorage.getItem(SAVED_ROAST_TEXT_KEY);
-    if (savedLocalText) {
+    if (!autosavedProfileText && savedLocalText) {
       setProfileText(savedLocalText);
     }
 
@@ -143,6 +150,11 @@ export default function Home() {
     void runRoast();
   }
 
+  function handleProfileTextChange(newValue: string) {
+    setProfileText(newValue);
+    window.localStorage.setItem(USER_PROFILE_TEXT_KEY, newValue);
+  }
+
   async function handleCheckout() {
     const variantId =
       userCountry === "IN"
@@ -191,6 +203,7 @@ export default function Home() {
       }
 
       window.localStorage.setItem(SAVED_ROAST_TEXT_KEY, profileText);
+      window.localStorage.setItem(USER_PROFILE_TEXT_KEY, profileText);
       window.location.href = checkoutUrl;
     } catch {
       setError("Network error starting checkout. Check your connection.");
@@ -205,7 +218,10 @@ export default function Home() {
     }
 
     const restoredLocalText =
-      profileText.trim() || window.localStorage.getItem(SAVED_ROAST_TEXT_KEY)?.trim() || "";
+      profileText.trim() ||
+      window.localStorage.getItem(USER_PROFILE_TEXT_KEY)?.trim() ||
+      window.localStorage.getItem(SAVED_ROAST_TEXT_KEY)?.trim() ||
+      "";
 
     if (!restoredLocalText) {
       setError(
@@ -215,7 +231,7 @@ export default function Home() {
     }
 
     if (!profileText.trim()) {
-      setProfileText(restoredLocalText);
+      handleProfileTextChange(restoredLocalText);
     }
 
     setError(null);
@@ -332,6 +348,8 @@ export default function Home() {
 
       setRoast(roastText);
       setResultsVisible(true);
+      window.localStorage.setItem(USER_PROFILE_TEXT_KEY, profileTextToSend);
+      window.localStorage.setItem(SAVED_ROAST_RESULT_KEY, roastText);
       persistSession({
         roast: roastText,
         rewrite: null,
@@ -386,7 +404,7 @@ What works best:
 👉 Your entire CV
 👉 Your friend's (or boss's) profile just to roast them!`}
             value={profileText}
-            onChange={(e) => setProfileText(e.target.value)}
+            onChange={(e) => handleProfileTextChange(e.target.value)}
             disabled={loading}
             required
             className="min-h-[200px] w-full resize-y rounded-2xl border border-zinc-800 bg-zinc-900 p-4 text-sm leading-7 text-zinc-50 shadow-inner shadow-black/40 outline-none placeholder:text-zinc-500 transition-[border-color,box-shadow] focus:border-orange-500 focus:ring-1 focus:ring-orange-500/50 enabled:hover:border-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[220px] sm:text-base"
