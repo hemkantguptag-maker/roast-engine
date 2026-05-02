@@ -10,14 +10,13 @@ export async function POST(request: NextRequest) {
 
     if (!apiKey) {
       console.error(
-        "[api/checkout] Lemon Squeezy API key is missing. " +
+        "[api/checkout-fit] Lemon Squeezy API key is missing. " +
           "Add it to .env.local and restart `npm run dev`.",
       );
       return NextResponse.json(
         {
           error: "Server is missing Lemon Squeezy API key",
-          hint:
-            "Add LEMON_SQUEEZY_API_KEY to .env.local and restart `npm run dev`.",
+          hint: "Add LEMON_SQUEEZY_API_KEY to .env.local and restart `npm run dev`.",
         },
         { status: 500 },
       );
@@ -25,14 +24,13 @@ export async function POST(request: NextRequest) {
 
     if (!storeId) {
       console.error(
-        "[api/checkout] Lemon Squeezy store ID is missing. " +
+        "[api/checkout-fit] Lemon Squeezy store ID is missing. " +
           "Add it to .env.local and restart `npm run dev`.",
       );
       return NextResponse.json(
         {
           error: "Server is missing Lemon Squeezy store ID",
-          hint:
-            "Add LEMON_SQUEEZY_STORE_ID to .env.local and restart `npm run dev`.",
+          hint: "Add LEMON_SQUEEZY_STORE_ID to .env.local and restart `npm run dev`.",
         },
         { status: 500 },
       );
@@ -65,7 +63,7 @@ export async function POST(request: NextRequest) {
         embed: false,
       },
       productOptions: {
-        redirectUrl: `${appUrl}/?success=true`,
+        redirectUrl: `${appUrl}/roast-my-fit?success=true`,
         enabledVariants: [numericVariantId],
       },
     });

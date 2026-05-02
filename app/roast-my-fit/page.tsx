@@ -1,11 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 
-type SavedSession = {
+type SavedFitSession = {
   roast: string | null;
-  rewrite: string | null;
-  profileText: string;
+  styleReport: string | null;
 };
 
 const ROAST_LANGUAGE_OPTIONS = [
@@ -21,12 +20,10 @@ const ROAST_LANGUAGE_OPTIONS = [
 
 type RoastLanguage = (typeof ROAST_LANGUAGE_OPTIONS)[number];
 
-const SESSION_STORAGE_KEY = "brutal-roast-rewrite-session";
-const SAVED_ROAST_TEXT_KEY = "savedRoastText";
-const USER_PROFILE_TEXT_KEY = "userProfileText";
-const SAVED_ROAST_RESULT_KEY = "savedRoastResult";
-const LINK_PASTE_ERROR =
-  "🚨 SYSTEM ERROR: Did you seriously just paste a link? I am an AI, not a web scraper. Copy and paste your actual text like a normal professional. 0/10 for following instructions. Try again.";
+const SESSION_STORAGE_KEY = "brutal-fit-roast-session";
+const SAVED_IMAGE_BASE64_KEY = "savedFitImageBase64";
+const SAVED_IMAGE_MIME_KEY = "savedFitImageMime";
+const SAVED_ROAST_RESULT_KEY = "savedFitRoastResult";
 
 function getRetrySeconds(message: string | null) {
   if (!message) {
@@ -42,49 +39,71 @@ function getRetrySeconds(message: string | null) {
   return Number.isNaN(seconds) ? null : seconds;
 }
 
-export default function Home() {
-  const [profileText, setProfileText] = useState("");
+export default function RoastMyFit() {
+  // imagePreviewUrl: object URL when file is freshly selected, data URL when restored from localStorage
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  // imageBase64: raw base64 string (no data: prefix) sent to the API and persisted
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [imageMimeType, setImageMimeType] = useState<string>("image/jpeg");
   const [loading, setLoading] = useState(false);
   const [roast, setRoast] = useState<string | null>(null);
-  const [rewrite, setRewrite] = useState<string | null>(null);
+  const [styleReport, setStyleReport] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
   const [resultsVisible, setResultsVisible] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [isRewriting, setIsRewriting] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
   const [userCountry, setUserCountry] = useState<string | null>(null);
   const [roastLanguage, setRoastLanguage] =
     useState<RoastLanguage>("English (Default)");
   const [copiedShare, setCopiedShare] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Revoke object URLs on change to avoid memory leaks
   useEffect(() => {
-    const autosavedProfileText = window.localStorage.getItem(USER_PROFILE_TEXT_KEY);
-    if (autosavedProfileText) {
-      setProfileText(autosavedProfileText);
-    }
+    return () => {
+      if (imagePreviewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
 
+  // Restore session on mount
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setHasPaid(params.get("success") === "true");
 
-    const savedLocalText = window.localStorage.getItem(SAVED_ROAST_TEXT_KEY);
-    if (!autosavedProfileText && savedLocalText) {
-      setProfileText(savedLocalText);
+    const savedBase64 = window.localStorage.getItem(SAVED_IMAGE_BASE64_KEY);
+    const savedMime =
+      window.localStorage.getItem(SAVED_IMAGE_MIME_KEY) ?? "image/jpeg";
+    if (savedBase64) {
+      setImageBase64(savedBase64);
+      setImageMimeType(savedMime);
+      setImagePreviewUrl(`data:${savedMime};base64,${savedBase64}`);
     }
+
+    const savedRoast = window.localStorage.getItem(SAVED_ROAST_RESULT_KEY);
 
     const saved = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
-    if (!saved) {
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(saved) as SavedSession;
-      setProfileText(parsed.profileText ?? "");
-      setRoast(parsed.roast ?? null);
-      setRewrite(parsed.rewrite ?? null);
-      setResultsVisible(Boolean(parsed.roast || parsed.rewrite || parsed.profileText));
-    } catch {
-      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as SavedFitSession;
+        const restoredRoast = parsed.roast ?? savedRoast ?? null;
+        setRoast(restoredRoast);
+        setStyleReport(parsed.styleReport ?? null);
+        setResultsVisible(Boolean(restoredRoast || parsed.styleReport));
+      } catch {
+        window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        if (savedRoast) {
+          setRoast(savedRoast);
+          setResultsVisible(true);
+        }
+      }
+    } else if (savedRoast) {
+      setRoast(savedRoast);
+      setResultsVisible(true);
     }
   }, []);
 
@@ -139,11 +158,66 @@ export default function Home() {
     return () => window.clearTimeout(timer);
   }, [retryCountdown]);
 
-  function persistSession(next: SavedSession) {
+  function persistSession(next: SavedFitSession) {
     window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(next));
   }
 
+  function saveBase64ToLocalStorage(base64: string, mimeType: string) {
+    try {
+      window.localStorage.setItem(SAVED_IMAGE_BASE64_KEY, base64);
+      window.localStorage.setItem(SAVED_IMAGE_MIME_KEY, mimeType);
+    } catch {
+      // Storage quota exceeded — proceed without persistence
+    }
+  }
+
   const showRetryCountdown = retryCountdown !== null && retryCountdown > 0;
+
+  function handleImageSelect(file: File) {
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setError("Please upload a JPG, PNG, or WEBP image.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be under 5MB. Please compress it and try again.");
+      return;
+    }
+
+    setError(null);
+    setImageMimeType(file.type);
+
+    // Object URL for fast preview display
+    const objectUrl = URL.createObjectURL(file);
+    setImagePreviewUrl(objectUrl);
+
+    // FileReader to get base64 for API calls and localStorage persistence
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      const base64 = dataUrl.split(",")[1];
+      setImageBase64(base64);
+      saveBase64ToLocalStorage(base64, file.type);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleDragOver(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDraggingOver(true);
+  }
+
+  function handleDragLeave() {
+    setIsDraggingOver(false);
+  }
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageSelect(file);
+  }
 
   function handleFormSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -151,19 +225,9 @@ export default function Home() {
     void runRoast();
   }
 
-  function handleProfileTextChange(newValue: string) {
-    setProfileText(newValue);
-    window.localStorage.setItem(USER_PROFILE_TEXT_KEY, newValue);
-  }
-
   function getDefaultShareText(roastText: string) {
-    const shareUrl = "https://myroastengine.com";
     const roastPreview = roastText.slice(0, 80);
-    return `I just got destroyed by AI! 😭🔥 My LinkedIn profile is officially a crime scene. \n\n${roastPreview}... \n\nCheck yours: ${shareUrl}`;
-  }
-
-  function getLinkedInChallengeMessage() {
-    return "I just took the AI Career Roast Challenge. It was brutal, but the rewrite is pure gold! 💼🔥 Can your profile handle a 100% honest AI roast? \n\nTry it here: https://myroastengine.com";
+    return `AI just destroyed my outfit \u{1F62D}\u{1F457}\n${roastPreview}...\nGet yours roasted: https://myroastengine.com/roast-my-fit`;
   }
 
   async function handleCopyRoast(roastText: string) {
@@ -188,20 +252,24 @@ export default function Home() {
 
   function handleShareOnThreads(roastText: string) {
     const shareText = encodeURIComponent(getDefaultShareText(roastText));
-    window.open(`https://www.threads.net/intent/post?text=${shareText}`, "_blank");
+    window.open(
+      `https://www.threads.net/intent/post?text=${shareText}`,
+      "_blank",
+    );
   }
 
   function handleShareOnLinkedIn() {
-    const linkedInShareUrl =
-      "https://www.linkedin.com/sharing/share-offsite/?url=https://myroastengine.com";
-    window.open(linkedInShareUrl, "_blank");
+    window.open(
+      "https://www.linkedin.com/sharing/share-offsite/?url=https://myroastengine.com/roast-my-fit",
+      "_blank",
+    );
   }
 
   async function handleCheckout() {
     const variantId =
       userCountry === "IN"
-        ? process.env.NEXT_PUBLIC_LEMON_SQUEEZY_INDIA_VARIANT_ID
-        : process.env.NEXT_PUBLIC_LEMON_SQUEEZY_GLOBAL_VARIANT_ID;
+        ? process.env.NEXT_PUBLIC_LEMON_SQUEEZY_FIT_INDIA_VARIANT_ID
+        : process.env.NEXT_PUBLIC_LEMON_SQUEEZY_FIT_GLOBAL_VARIANT_ID;
 
     if (!variantId) {
       setError(
@@ -210,15 +278,11 @@ export default function Home() {
       return;
     }
 
-    persistSession({
-      roast,
-      rewrite,
-      profileText,
-    });
+    persistSession({ roast, styleReport });
 
     setCheckoutLoading(true);
     try {
-      const res = await fetch("/api/checkout", {
+      const res = await fetch("/api/checkout-fit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ variantId }),
@@ -244,8 +308,6 @@ export default function Home() {
         return;
       }
 
-      window.localStorage.setItem(SAVED_ROAST_TEXT_KEY, profileText);
-      window.localStorage.setItem(USER_PROFILE_TEXT_KEY, profileText);
       window.location.href = checkoutUrl;
     } catch {
       setError("Network error starting checkout. Check your connection.");
@@ -254,30 +316,33 @@ export default function Home() {
     }
   }
 
-  async function handleRewrite() {
-    if (isRewriting) {
+  async function handleGenerateReport() {
+    if (isGeneratingReport) {
       return;
     }
 
-    const restoredLocalText =
-      profileText.trim() ||
-      window.localStorage.getItem(USER_PROFILE_TEXT_KEY)?.trim() ||
-      window.localStorage.getItem(SAVED_ROAST_TEXT_KEY)?.trim() ||
-      "";
+    const restoredBase64 =
+      imageBase64 ?? window.localStorage.getItem(SAVED_IMAGE_BASE64_KEY);
+    const restoredMime =
+      imageMimeType !== "image/jpeg"
+        ? imageMimeType
+        : (window.localStorage.getItem(SAVED_IMAGE_MIME_KEY) ?? "image/jpeg");
 
-    if (!restoredLocalText) {
+    if (!restoredBase64) {
       setError(
-        "We could not restore the profile text after checkout. Roast the profile again, then try the rewrite.",
+        "Please re-upload your outfit photo to generate the style report.",
       );
       return;
     }
 
-    if (!profileText.trim()) {
-      handleProfileTextChange(restoredLocalText);
+    if (!imageBase64) {
+      setImageBase64(restoredBase64);
+      setImageMimeType(restoredMime);
+      setImagePreviewUrl(`data:${restoredMime};base64,${restoredBase64}`);
     }
 
     setError(null);
-    setIsRewriting(true);
+    setIsGeneratingReport(true);
 
     const nextUrl = new URL(window.location.href);
     if (nextUrl.searchParams.has("success")) {
@@ -286,12 +351,12 @@ export default function Home() {
     }
 
     try {
-      const res = await fetch("/api/rewrite", {
+      const res = await fetch("/api/rewrite-fit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          profileText: restoredLocalText,
-          country: userCountry,
+          imageBase64: restoredBase64,
+          mimeType: restoredMime,
         }),
       });
 
@@ -305,56 +370,50 @@ export default function Home() {
           : null;
 
       if (!res.ok) {
-        setError(message ?? "Could not generate your rewrite. Try again.");
+        setError(message ?? "Could not generate your style report. Try again.");
         return;
       }
 
-      const rewriteText =
+      const report =
         data &&
         typeof data === "object" &&
-        "rewrite" in data &&
-        typeof (data as { rewrite: unknown }).rewrite === "string"
-          ? (data as { rewrite: string }).rewrite.trim()
+        "styleReport" in data &&
+        typeof (data as { styleReport: unknown }).styleReport === "string"
+          ? (data as { styleReport: string }).styleReport.trim()
           : null;
 
-      if (!rewriteText) {
-        setError("No rewrite in response.");
+      if (!report) {
+        setError("No style report in response.");
         return;
       }
 
-      setRewrite(rewriteText);
-      persistSession({
-        roast,
-        rewrite: rewriteText,
-        profileText: restoredLocalText,
-      });
+      setStyleReport(report);
+      persistSession({ roast, styleReport: report });
     } catch {
-      setError("Network error generating your rewrite. Try again.");
+      setError("Network error generating your style report. Try again.");
     } finally {
-      setIsRewriting(false);
+      setIsGeneratingReport(false);
     }
   }
 
   async function runRoast() {
-    const profileTextToSend = profileText.trim();
-
-    if (/(http|https|www\.|linkedin\.com)/i.test(profileTextToSend)) {
-      setError(LINK_PASTE_ERROR);
+    if (!imageBase64) {
+      setError("Please upload an outfit photo first.");
       return;
     }
 
     setError(null);
     setRoast(null);
-    setRewrite(null);
+    setStyleReport(null);
     setLoading(true);
 
     try {
-      const res = await fetch("/api/roast", {
+      const res = await fetch("/api/roast-fit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          profileText: profileTextToSend,
-          country: userCountry,
+          imageBase64,
+          mimeType: imageMimeType,
           roastLanguage,
         }),
       });
@@ -390,13 +449,8 @@ export default function Home() {
 
       setRoast(roastText);
       setResultsVisible(true);
-      window.localStorage.setItem(USER_PROFILE_TEXT_KEY, profileTextToSend);
       window.localStorage.setItem(SAVED_ROAST_RESULT_KEY, roastText);
-      persistSession({
-        roast: roastText,
-        rewrite: null,
-        profileText: profileTextToSend,
-      });
+      persistSession({ roast: roastText, styleReport: null });
     } catch {
       setError("Network error. Check your connection and try again.");
       setResultsVisible(true);
@@ -408,13 +462,20 @@ export default function Home() {
   return (
     <div className="relative min-h-full flex flex-col overflow-hidden bg-zinc-950 text-zinc-100">
       <nav className="relative z-20 flex justify-center gap-3 pt-6 pb-2">
-        <a href="/" className="rounded-full border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors">
+        <a
+          href="/"
+          className="rounded-full border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+        >
           💼 Roast My LinkedIn
         </a>
-        <a href="/roast-my-fit" className="rounded-full border border-orange-500/40 bg-orange-500/10 px-4 py-2 text-sm font-medium text-orange-300 hover:bg-orange-500/20 transition-colors">
+        <a
+          href="/roast-my-fit"
+          className="rounded-full border border-orange-500/40 bg-orange-500/10 px-4 py-2 text-sm font-medium text-orange-300 hover:bg-orange-500/20 transition-colors"
+        >
           👗 Roast My Fit
         </a>
       </nav>
+
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(249,115,22,0.18),transparent),radial-gradient(ellipse_60%_40%_at_100%_50%,rgba(244,63,94,0.08),transparent),radial-gradient(ellipse_50%_35%_at_0%_80%,rgba(234,179,8,0.06),transparent)]"
@@ -427,11 +488,11 @@ export default function Home() {
       <main className="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-4 py-16 sm:px-6 sm:py-24">
         <header className="mb-10 text-center sm:mb-12">
           <h1 className="text-4xl font-extrabold tracking-tight text-zinc-50 sm:text-5xl sm:leading-tight">
-            Brutal Roast &amp; Rewrite
+            Roast My Fit {"\u{1F457}"}
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-zinc-400 sm:text-lg">
-            Paste your LinkedIn profile text or resume. The AI will roast it for
-            free. Pay $4.99 to have it rewritten into a Top-1% profile.
+            Upload your outfit photo. AI will roast it for free. Pay $4.99 for
+            a full celebrity stylist report.
           </p>
         </header>
 
@@ -440,32 +501,61 @@ export default function Home() {
           method="post"
           onSubmit={handleFormSubmit}
         >
-          <label htmlFor="profile-text" className="sr-only">
-            LinkedIn profile text or resume
-          </label>
-          <textarea
-            id="profile-text"
-            rows={8}
-            placeholder={`Copy & paste your raw text here (DO NOT paste links/URLs!)
-
-What works best:
-👉 Your LinkedIn 'About' section
-👉 A few bullet points from your resume
-👉 Your entire CV
-👉 Your friend's (or boss's) profile just to roast them!`}
-            value={profileText}
-            onChange={(e) => handleProfileTextChange(e.target.value)}
-            disabled={loading}
-            required
-            className="min-h-[200px] w-full resize-y rounded-2xl border border-zinc-800 bg-zinc-900 p-4 text-sm leading-7 text-zinc-50 shadow-inner shadow-black/40 outline-none placeholder:text-zinc-500 transition-[border-color,box-shadow] focus:border-orange-500 focus:ring-1 focus:ring-orange-500/50 enabled:hover:border-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[220px] sm:text-base"
-          />
-          <div className="mt-2 rounded-lg border border-zinc-700 bg-zinc-800/50 p-3">
-            <p className="text-center text-sm text-zinc-400">
-              📱 Mobile Users: The LinkedIn app blocks text copying. Paste text
-              from your PDF/Notes, or open LinkedIn in your mobile web browser
-              instead!
-            </p>
+          <div
+            className={`relative flex min-h-[200px] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-colors sm:min-h-[220px] ${
+              isDraggingOver
+                ? "border-orange-500 bg-orange-500/10"
+                : imagePreviewUrl
+                  ? "border-zinc-700 bg-zinc-900/80"
+                  : "border-zinc-700 bg-zinc-900 hover:border-zinc-600"
+            }`}
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ")
+                fileInputRef.current?.click();
+            }}
+            aria-label="Upload outfit photo"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageSelect(file);
+                e.target.value = "";
+              }}
+            />
+            {imagePreviewUrl ? (
+              <div className="flex w-full flex-col items-center gap-2 p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imagePreviewUrl}
+                  alt="Your outfit"
+                  className="max-h-64 w-full rounded-xl object-contain"
+                />
+                <p className="text-xs text-zinc-500">Click to change photo</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3 p-6 text-center">
+                <div className="text-4xl">{"\u{1F457}"}</div>
+                <p className="text-sm font-medium text-zinc-300">
+                  Drop your outfit photo here
+                </p>
+                <p className="text-xs text-zinc-500">or click to browse</p>
+                <p className="mt-1 text-xs text-zinc-600">
+                  JPG &middot; PNG &middot; WEBP &middot; Max 5MB
+                </p>
+              </div>
+            )}
           </div>
+
           {error ? (
             <p className="text-sm leading-relaxed text-red-400">{error}</p>
           ) : null}
@@ -485,12 +575,12 @@ What works best:
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !imageBase64}
             className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-orange-500 to-red-600 px-6 py-4 text-center text-lg font-bold tracking-wide text-white shadow-lg shadow-orange-500/30 transition-[transform,filter,box-shadow] hover:from-orange-400 hover:to-red-500 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100 sm:py-4 sm:text-lg"
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
-              <span aria-hidden>{"\u{1F525}"}</span>
-              {loading ? "Roasting..." : "Roast Me (Free)"}
+              <span aria-hidden>{"\u{1F457}"}</span>
+              {loading ? "Roasting..." : "Roast My Fit (Free)"}
             </span>
             <span
               aria-hidden
@@ -514,7 +604,7 @@ What works best:
                   className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
                     error
                       ? "bg-red-950/80 text-red-300/90"
-                      : rewrite
+                      : styleReport
                         ? "bg-sky-950/80 text-sky-300/90"
                         : roast
                           ? "bg-emerald-950/80 text-emerald-300/90"
@@ -523,8 +613,8 @@ What works best:
                 >
                   {error
                     ? "Error"
-                    : rewrite
-                      ? "Rewrite ready"
+                    : styleReport
+                      ? "Report ready"
                       : roast
                         ? "Roast ready"
                         : hasPaid
@@ -543,8 +633,8 @@ What works best:
                       {retryCountdown}s
                     </p>
                     <p className="mt-3 text-sm leading-relaxed text-zinc-300">
-                      High demand hit the free AI quota. Wait for the timer, then
-                      try again for a much better shot.
+                      High demand hit the free AI quota. Wait for the timer,
+                      then try again for a much better shot.
                     </p>
                   </div>
                 ) : (
@@ -590,7 +680,6 @@ What works best:
                         <button
                           type="button"
                           onClick={() => handleShareOnLinkedIn()}
-                          title={getLinkedInChallengeMessage()}
                           className="flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-300 transition-all hover:bg-zinc-800 sm:text-sm"
                         >
                           💼 LinkedIn
@@ -613,22 +702,23 @@ What works best:
                           Payment Confirmed
                         </p>
                         <h3 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                          Your elite rewrite is unlocked
+                          Your Style Report is unlocked
                         </h3>
                         <p className="text-sm leading-relaxed text-zinc-300 sm:text-base">
-                          One click and we will turn this roasted profile into a recruiter-ready rewrite.
+                          One click and we will generate your full celebrity
+                          stylist report.
                         </p>
                       </div>
 
                       <button
                         type="button"
-                        onClick={() => void handleRewrite()}
-                        disabled={isRewriting}
+                        onClick={() => void handleGenerateReport()}
+                        disabled={isGeneratingReport}
                         className="w-full rounded-xl bg-gradient-to-r from-fuchsia-500 via-violet-500 to-sky-500 px-5 py-4 text-center text-sm font-semibold tracking-wide text-white shadow-[0_10px_35px_-12px_rgba(168,85,247,0.65)] transition-[transform,filter] hover:brightness-110 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:text-base"
                       >
-                        {isRewriting
-                          ? "Generating Masterpiece..."
-                          : "\u2728 Generate My Elite Rewrite"}
+                        {isGeneratingReport
+                          ? "Generating Style Report..."
+                          : "\u2728 Generate My Style Report"}
                       </button>
                     </div>
                   ) : roast ? (
@@ -651,27 +741,29 @@ What works best:
                           {checkoutLoading
                             ? "Redirecting to checkout..."
                             : userCountry === "IN"
-                              ? "\u2728 Unlock Professional Rewrite \u2014 \u20B999"
-                              : "\u2728 Unlock Professional Rewrite \u2014 $4.99"}
+                              ? "\u2728 Unlock Style Makeover Report \u2014 \u20B999"
+                              : "\u2728 Unlock Style Makeover Report \u2014 $4.99"}
                         </button>
                       )}
                     </>
                   ) : hasPaid ? (
                     <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-4 text-sm leading-relaxed text-zinc-300">
-                      Payment succeeded, but we could not restore the roast context. Roast the profile again to generate the rewrite.
+                      Payment succeeded, but we could not restore the outfit
+                      photo. Please re-upload your photo above to generate the
+                      style report.
                     </div>
                   ) : null}
 
-                  {rewrite ? (
+                  {styleReport ? (
                     <div className="rounded-2xl border border-sky-500/20 bg-zinc-950/70 p-5 shadow-[0_12px_40px_-20px_rgba(56,189,248,0.55)] sm:p-6">
                       <div className="mb-4 flex items-center gap-3">
                         <div className="h-2.5 w-2.5 rounded-full bg-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.8)]" />
                         <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-200/85">
-                          Elite Rewrite
+                          Style Makeover Report
                         </h3>
                       </div>
                       <div className="whitespace-pre-wrap text-pretty text-sm leading-7 text-zinc-100 sm:text-[15px]">
-                        {rewrite}
+                        {styleReport}
                       </div>
                     </div>
                   ) : null}
