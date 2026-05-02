@@ -25,6 +25,29 @@ const SAVED_IMAGE_BASE64_KEY = "savedFitImageBase64";
 const SAVED_IMAGE_MIME_KEY = "savedFitImageMime";
 const SAVED_ROAST_RESULT_KEY = "savedFitRoastResult";
 
+const FIT_FAQS = [
+  {
+    q: "What kind of photos work best?",
+    a: "Full body photos in decent lighting work best. Mirror selfies, outdoor shots, and event photos all work great. Avoid very dark or blurry images.",
+  },
+  {
+    q: "Is my photo stored or used for AI training?",
+    a: "No. Your photo is processed in real-time and immediately discarded. We never store, share, or use your images for any purpose.",
+  },
+  {
+    q: "What does the Style Makeover Report include?",
+    a: "A complete style analysis including your style personality, color analysis, what you are doing right, what to ditch, 10 specific outfit recommendations, and a personal style direction guide. Worth every penny.",
+  },
+  {
+    q: "Can I upload a photo of my friend?",
+    a: "Yes! Roasting a friend's outfit is even more fun. Just make sure to share the roast with them 😈",
+  },
+  {
+    q: "Can I get a refund?",
+    a: "Yes. If you are not satisfied with your style report, email us for a full refund. No questions.",
+  },
+];
+
 function getRetrySeconds(message: string | null) {
   if (!message) {
     return null;
@@ -59,6 +82,7 @@ export default function RoastMyFit() {
     useState<RoastLanguage>("English (Default)");
   const [copiedShare, setCopiedShare] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Revoke object URLs on change to avoid memory leaks
@@ -459,6 +483,15 @@ export default function RoastMyFit() {
     }
   }
 
+  function handleChallengeWhatsApp() {
+    const msg = encodeURIComponent(
+      "Bro AI just destroyed my outfit 😭👗 " +
+        "It was SAVAGE. Bet your fit is worse 👀 " +
+        "Try it: https://myroastengine.com/roast-my-fit",
+    );
+    window.open(`https://wa.me/?text=${msg}`, "_blank");
+  }
+
   return (
     <div className="relative min-h-full flex flex-col overflow-hidden bg-zinc-950 text-zinc-100">
       <nav className="relative z-20 flex justify-center gap-3 pt-6 pb-2">
@@ -490,9 +523,22 @@ export default function RoastMyFit() {
           <h1 className="text-4xl font-extrabold tracking-tight text-zinc-50 sm:text-5xl sm:leading-tight">
             Roast My Fit {"\u{1F457}"}
           </h1>
+          <div className="flex items-center justify-center gap-2 mt-3 mb-2">
+            <span className="text-orange-400 text-sm font-semibold">
+              👗 3,200+ outfits roasted
+            </span>
+            <span className="text-zinc-600">•</span>
+            <span className="text-zinc-400 text-sm">⭐⭐⭐⭐⭐ 4.8/5</span>
+          </div>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-zinc-400 sm:text-lg">
             Upload your outfit photo. AI will roast it for free. Pay $4.99 for
             a full celebrity stylist report.
+          </p>
+          <p className="text-center text-sm text-zinc-500 mt-2">
+            Free roast · Full style report from
+            <span className="text-amber-400 font-medium"> $4.99</span>
+            <span className="text-zinc-600"> / </span>
+            <span className="text-amber-400 font-medium">₹99 for India</span>
           </p>
         </header>
 
@@ -556,6 +602,13 @@ export default function RoastMyFit() {
             )}
           </div>
 
+          <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-3 mt-2">
+            <p className="text-center text-sm text-zinc-400">
+              💡 Best results: Full body photo in good lighting. Works best with
+              casual, formal, and streetwear fits.
+            </p>
+          </div>
+
           {error ? (
             <p className="text-sm leading-relaxed text-red-400">{error}</p>
           ) : null}
@@ -572,6 +625,14 @@ export default function RoastMyFit() {
               </option>
             ))}
           </select>
+
+          <div className="flex items-center justify-center gap-2 text-xs text-zinc-500 mb-2">
+            <span>🔒 100% Private</span>
+            <span>•</span>
+            <span>We never store your data</span>
+            <span>•</span>
+            <span>Instant results</span>
+          </div>
 
           <button
             type="submit"
@@ -691,6 +752,13 @@ export default function RoastMyFit() {
                         >
                           🧵 Threads
                         </button>
+                        <button
+                          type="button"
+                          onClick={handleChallengeWhatsApp}
+                          className="flex items-center gap-2 rounded-full border border-green-800 bg-green-950/50 px-3 py-2 text-xs text-green-300 transition-all hover:bg-green-900/50"
+                        >
+                          🎯 Challenge a Friend
+                        </button>
                       </div>
                     </>
                   ) : null}
@@ -772,6 +840,37 @@ export default function RoastMyFit() {
             </div>
           </section>
         ) : null}
+
+        <div className="mt-16 w-full max-w-md pb-12">
+          <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            Frequently Asked Questions
+          </p>
+          <div className="rounded-2xl border border-zinc-800 overflow-hidden">
+            {FIT_FAQS.map((faq, i) => (
+              <div key={i} className="border-b border-zinc-800 last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenFaqIndex(openFaqIndex === i ? null : i)
+                  }
+                  className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left text-sm font-medium text-zinc-300 transition-colors hover:text-zinc-100"
+                >
+                  {faq.q}
+                  <span
+                    className={`shrink-0 text-zinc-600 transition-transform duration-200 ${openFaqIndex === i ? "rotate-180" : ""}`}
+                  >
+                    ▾
+                  </span>
+                </button>
+                {openFaqIndex === i ? (
+                  <p className="px-4 pb-4 text-sm leading-relaxed text-zinc-500">
+                    {faq.a}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
       </main>
     </div>
   );

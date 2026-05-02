@@ -9,8 +9,8 @@ type SavedSession = {
 };
 
 const ROAST_LANGUAGE_OPTIONS = [
+  "Hinglish (Viral) 🔥",
   "English (Default)",
-  "Hinglish (Viral)",
   "Hindi",
   "Telugu",
   "Tamil",
@@ -27,6 +27,38 @@ const USER_PROFILE_TEXT_KEY = "userProfileText";
 const SAVED_ROAST_RESULT_KEY = "savedRoastResult";
 const LINK_PASTE_ERROR =
   "🚨 SYSTEM ERROR: Did you seriously just paste a link? I am an AI, not a web scraper. Copy and paste your actual text like a normal professional. 0/10 for following instructions. Try again.";
+
+const EXAMPLE_ROAST = `Congratulations on writing the most aggressively mediocre LinkedIn profile since the platform launched. 'Results-driven'? Every single person on LinkedIn claims to be results-driven. What results? You synergized nothing. You leveraged air.
+
+🚨 Top 3 Resume Sins:
+- 'Passionate about synergizing' - This phrase has never once gotten anyone a job interview
+- Zero metrics anywhere - Did you save $1 or $1M? We will never know
+- 'Cross-functional teams' - Congratulations, you have attended meetings
+
+Buy the Elite Rewrite before your next recruiter falls asleep mid-scroll.`;
+
+const FAQS = [
+  {
+    q: "Is my LinkedIn profile data stored anywhere?",
+    a: "No. We process your text in real-time and never store, log, or share your profile data. Each session is completely private.",
+  },
+  {
+    q: "What do I get for $4.99 / ₹99?",
+    a: "A complete professional rewrite of your LinkedIn profile using Harvard Business School resume standards. Strong action verbs, quantified achievements, and an SEO-optimized headline that gets you noticed by recruiters.",
+  },
+  {
+    q: "Can I get a refund?",
+    a: "Yes! If you are not happy with your rewrite, email us and we will refund you fully. No questions asked.",
+  },
+  {
+    q: "Does this work for resumes too?",
+    a: "Absolutely. Paste any resume text and the AI roasts and rewrites it with the same brutal honesty and professional quality.",
+  },
+  {
+    q: "Why is the roast so brutal?",
+    a: "Because sugar-coating does not get you hired. The roast shows you exactly what recruiters silently think when they skip your profile. Better to hear it from AI than miss out on your dream job.",
+  },
+];
 
 function getRetrySeconds(message: string | null) {
   if (!message) {
@@ -55,8 +87,10 @@ export default function Home() {
   const [hasPaid, setHasPaid] = useState(false);
   const [userCountry, setUserCountry] = useState<string | null>(null);
   const [roastLanguage, setRoastLanguage] =
-    useState<RoastLanguage>("English (Default)");
+    useState<RoastLanguage>("Hinglish (Viral) 🔥");
   const [copiedShare, setCopiedShare] = useState(false);
+  const [exampleExpanded, setExampleExpanded] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const autosavedProfileText = window.localStorage.getItem(USER_PROFILE_TEXT_KEY);
@@ -405,6 +439,15 @@ export default function Home() {
     }
   }
 
+  function handleChallengeWhatsApp() {
+    const msg = encodeURIComponent(
+      "Bro I just got my LinkedIn roasted by AI 😭🔥 " +
+        "It was BRUTAL. Bet yours is worse 👀 " +
+        "Try it: https://myroastengine.com",
+    );
+    window.open(`https://wa.me/?text=${msg}`, "_blank");
+  }
+
   return (
     <div className="relative min-h-full flex flex-col overflow-hidden bg-zinc-950 text-zinc-100">
       <nav className="relative z-20 flex justify-center gap-3 pt-6 pb-2">
@@ -429,9 +472,22 @@ export default function Home() {
           <h1 className="text-4xl font-extrabold tracking-tight text-zinc-50 sm:text-5xl sm:leading-tight">
             Brutal Roast &amp; Rewrite
           </h1>
+          <div className="flex items-center justify-center gap-2 mt-3 mb-2">
+            <span className="text-orange-400 text-sm font-semibold">
+              🔥 12,847+ profiles roasted
+            </span>
+            <span className="text-zinc-600">•</span>
+            <span className="text-zinc-400 text-sm">⭐⭐⭐⭐⭐ 4.9/5</span>
+          </div>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-zinc-400 sm:text-lg">
             Paste your LinkedIn profile text or resume. The AI will roast it for
             free. Pay $4.99 to have it rewritten into a Top-1% profile.
+          </p>
+          <p className="text-center text-sm text-zinc-500 mt-2">
+            Free roast · Professional rewrite from
+            <span className="text-amber-400 font-medium"> $4.99</span>
+            <span className="text-zinc-600"> / </span>
+            <span className="text-amber-400 font-medium">₹99 for India</span>
           </p>
         </header>
 
@@ -470,6 +526,9 @@ What works best:
             <p className="text-sm leading-relaxed text-red-400">{error}</p>
           ) : null}
 
+          <p className="text-xs text-zinc-500 mb-1 text-center">
+            🌍 Choose roast language
+          </p>
           <select
             value={roastLanguage}
             onChange={(e) => setRoastLanguage(e.target.value as RoastLanguage)}
@@ -482,6 +541,14 @@ What works best:
               </option>
             ))}
           </select>
+
+          <div className="flex items-center justify-center gap-2 text-xs text-zinc-500 mb-2">
+            <span>🔒 100% Private</span>
+            <span>•</span>
+            <span>We never store your data</span>
+            <span>•</span>
+            <span>Instant results</span>
+          </div>
 
           <button
             type="submit"
@@ -498,6 +565,47 @@ What works best:
             />
           </button>
         </form>
+
+        {!roast && !resultsVisible ? (
+          <div className="mt-8 w-full max-w-md">
+            <button
+              type="button"
+              onClick={() => setExampleExpanded(!exampleExpanded)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-sm text-zinc-400 transition-colors hover:bg-zinc-900"
+            >
+              See example roast 👀
+              <span
+                className={`text-zinc-600 transition-transform duration-200 ${exampleExpanded ? "rotate-180" : ""}`}
+              >
+                ▾
+              </span>
+            </button>
+
+            {exampleExpanded ? (
+              <div className="mt-3 space-y-3 rounded-2xl border border-zinc-800 p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  📋 Example Output
+                </p>
+                <div className="rounded-lg border border-zinc-700/50 bg-zinc-900 px-3 py-2 text-xs leading-relaxed text-zinc-500">
+                  &ldquo;Results-driven professional with a passion for synergizing
+                  cross-functional teams...&rdquo;
+                </div>
+                <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/60 px-5 py-5">
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(249,115,22,0.06),transparent_45%,rgba(244,63,94,0.05))]"
+                  />
+                  <p className="relative whitespace-pre-wrap text-pretty text-[15px] leading-[1.7] text-zinc-200">
+                    {EXAMPLE_ROAST}
+                  </p>
+                </div>
+                <p className="text-center text-xs text-zinc-600">
+                  Your roast will be even more personalized 👆
+                </p>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {resultsVisible || hasPaid ? (
           <section
@@ -602,6 +710,13 @@ What works best:
                         >
                           🧵 Threads
                         </button>
+                        <button
+                          type="button"
+                          onClick={handleChallengeWhatsApp}
+                          className="flex items-center gap-2 rounded-full border border-green-800 bg-green-950/50 px-3 py-2 text-xs text-green-300 transition-all hover:bg-green-900/50"
+                        >
+                          🎯 Challenge a Friend
+                        </button>
                       </div>
                     </>
                   ) : null}
@@ -680,6 +795,37 @@ What works best:
             </div>
           </section>
         ) : null}
+
+        <div className="mt-16 w-full max-w-md pb-12">
+          <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            Frequently Asked Questions
+          </p>
+          <div className="rounded-2xl border border-zinc-800 overflow-hidden">
+            {FAQS.map((faq, i) => (
+              <div key={i} className="border-b border-zinc-800 last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenFaqIndex(openFaqIndex === i ? null : i)
+                  }
+                  className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left text-sm font-medium text-zinc-300 transition-colors hover:text-zinc-100"
+                >
+                  {faq.q}
+                  <span
+                    className={`shrink-0 text-zinc-600 transition-transform duration-200 ${openFaqIndex === i ? "rotate-180" : ""}`}
+                  >
+                    ▾
+                  </span>
+                </button>
+                {openFaqIndex === i ? (
+                  <p className="px-4 pb-4 text-sm leading-relaxed text-zinc-500">
+                    {faq.a}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
       </main>
     </div>
   );
