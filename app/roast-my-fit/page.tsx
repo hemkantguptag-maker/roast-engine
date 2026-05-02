@@ -8,8 +8,8 @@ type SavedFitSession = {
 };
 
 const ROAST_LANGUAGE_OPTIONS = [
+  "Hinglish (Viral) 🔥",
   "English (Default)",
-  "Hinglish (Viral)",
   "Hindi",
   "Telugu",
   "Tamil",
@@ -114,7 +114,7 @@ export default function RoastMyFit() {
   const [hasPaid, setHasPaid] = useState(false);
   const [userCountry, setUserCountry] = useState<string | null>(null);
   const [roastLanguage, setRoastLanguage] =
-    useState<RoastLanguage>("English (Default)");
+    useState<RoastLanguage>("Hinglish (Viral) 🔥");
   const [copiedShare, setCopiedShare] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
